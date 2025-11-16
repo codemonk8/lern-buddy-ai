@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+// import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -55,7 +55,7 @@ export function CreateSetDialog({ open, onOpenChange, onSetCreated }: CreateSetD
       toast.success("Lernset erstellt!");
       onSetCreated();
       onOpenChange(false);
-      
+
       // Reset form
       setTitle("");
       setDescription("");
@@ -109,9 +109,8 @@ export function CreateSetDialog({ open, onOpenChange, onSetCreated }: CreateSetD
                   <button
                     key={e}
                     type="button"
-                    className={`text-2xl p-2 rounded-lg transition-all hover:scale-110 ${
-                      emoji === e ? "bg-primary/20 ring-2 ring-primary" : "hover:bg-muted"
-                    }`}
+                    className={`text-2xl p-2 rounded-lg transition-all hover:scale-110 ${emoji === e ? "bg-primary/20 ring-2 ring-primary" : "hover:bg-muted"
+                      }`}
                     onClick={() => setEmoji(e)}
                     disabled={isLoading}
                   >
@@ -127,9 +126,8 @@ export function CreateSetDialog({ open, onOpenChange, onSetCreated }: CreateSetD
                   <button
                     key={c}
                     type="button"
-                    className={`w-10 h-10 rounded-lg transition-all hover:scale-110 ${
-                      color === c ? "ring-2 ring-offset-2 ring-primary" : ""
-                    }`}
+                    className={`w-10 h-10 rounded-lg transition-all hover:scale-110 ${color === c ? "ring-2 ring-offset-2 ring-primary" : ""
+                      }`}
                     style={{ backgroundColor: c }}
                     onClick={() => setColor(c)}
                     disabled={isLoading}
