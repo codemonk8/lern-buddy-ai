@@ -3,10 +3,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Plus, Play, Trash2, Sparkles } from "lucide-react";
+import { ArrowLeft, Plus, Play, Trash2, Sparkles, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { CardEditor } from "@/components/CardEditor";
 import { AIGeneratorDialog } from "@/components/AIGeneratorDialog";
+import { ShareDialog } from "@/components/ShareDialog";
 
 interface LearningSet {
   id: string;
@@ -14,6 +15,9 @@ interface LearningSet {
   description: string | null;
   emoji: string;
   color: string;
+  is_public: boolean;
+  share_token: string | null;
+  user_id: string;
 }
 
 interface Flashcard {
@@ -31,6 +35,8 @@ export default function SetEditor() {
   const [editingCard, setEditingCard] = useState<Flashcard | null>(null);
   const [isCardEditorOpen, setIsCardEditorOpen] = useState(false);
   const [isAIDialogOpen, setIsAIDialogOpen] = useState(false);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -48,6 +54,10 @@ export default function SetEditor() {
 
       if (setError) throw setError;
       setSet(setData);
+
+      // Check if the current user is the owner
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsOwner(user?.id === setData.user_id);
 
       const { data: cardsData, error: cardsError } = await supabase
         .from("flashcards")
@@ -139,22 +149,7 @@ export default function SetEditor() {
             </div>
           </div>
 
-          <div className="flex gap-2">
-            <Button
-              onClick={handleAddNewCard}
-              className="bg-gradient-primary hover:opacity-90"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Karte hinzufügen
-            </Button>
-            <Button
-              onClick={() => setIsAIDialogOpen(true)}
-              variant="secondary"
-              className="bg-gradient-secondary hover:opacity-90"
-            >
-              <Sparkles className="h-4 w-4 mr-2" />
-              Mit KI generieren
-            </Button>
+          <div className="flex gap-2 flex-wrap">
             {cards.length > 0 && (
               <Button
                 onClick={() => navigate(`/learn/${id}`)}
@@ -164,6 +159,37 @@ export default function SetEditor() {
                 <Play className="h-4 w-4 mr-2" />
                 Lernen starten
               </Button>
+            )}
+            {isOwner && (
+              <>
+                <Button
+                  onClick={handleAddNewCard}
+                  className="bg-gradient-primary hover:opacity-90"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Karte hinzufügen
+                </Button>
+                <Button
+                  onClick={() => setIsAIDialogOpen(true)}
+                  variant="secondary"
+                  className="bg-gradient-secondary hover:opacity-90"
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Mit KI generieren
+                </Button>
+                <Button
+                  onClick={() => setIsShareDialogOpen(true)}
+                  variant="outline"
+                >
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Teilen
+                </Button>
+              </>
+            )}
+            {!isOwner && (
+              <p className="text-sm text-muted-foreground flex items-center">
+                📖 Geteiltes Lernset (nur ansehen)
+              </p>
             )}
           </div>
         </div>
@@ -178,28 +204,30 @@ export default function SetEditor() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {cards.map((card) => (
+             {cards.map((card) => (
               <Card
                 key={card.id}
-                className="cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 shadow-card group"
-                onClick={() => handleEditCard(card)}
+                className={`hover:shadow-lg transition-all duration-300 hover:-translate-y-1 shadow-card group ${isOwner ? 'cursor-pointer' : ''}`}
+                onClick={() => isOwner && handleEditCard(card)}
               >
                 <CardHeader className="pb-3">
                   <div className="flex justify-between items-start">
                     <CardTitle className="text-sm font-medium text-muted-foreground">
                       Vorderseite
                     </CardTitle>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteCard(card.id);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {isOwner && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteCard(card.id);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                   <p className="text-base font-semibold line-clamp-3">{card.front}</p>
                 </CardHeader>
@@ -212,20 +240,33 @@ export default function SetEditor() {
           </div>
         )}
 
-        <CardEditor
-          open={isCardEditorOpen}
-          onOpenChange={setIsCardEditorOpen}
-          setId={id!}
-          card={editingCard}
-          onCardSaved={fetchSetAndCards}
-        />
+        {isOwner && (
+          <>
+            <CardEditor
+              open={isCardEditorOpen}
+              onOpenChange={setIsCardEditorOpen}
+              setId={id!}
+              card={editingCard}
+              onCardSaved={fetchSetAndCards}
+            />
 
-        <AIGeneratorDialog
-          open={isAIDialogOpen}
-          onOpenChange={setIsAIDialogOpen}
-          setId={id!}
-          onCardsGenerated={fetchSetAndCards}
-        />
+            <AIGeneratorDialog
+              open={isAIDialogOpen}
+              onOpenChange={setIsAIDialogOpen}
+              setId={id!}
+              onCardsGenerated={fetchSetAndCards}
+            />
+
+            <ShareDialog
+              open={isShareDialogOpen}
+              onOpenChange={setIsShareDialogOpen}
+              setId={id!}
+              isPublic={set.is_public}
+              shareToken={set.share_token}
+              onShareUpdated={fetchSetAndCards}
+            />
+          </>
+        )}
       </div>
     </div>
   );
