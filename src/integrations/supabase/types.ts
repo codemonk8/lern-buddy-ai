@@ -56,6 +56,8 @@ export type Database = {
           description: string | null
           emoji: string | null
           id: string
+          is_public: boolean | null
+          share_token: string | null
           title: string
           updated_at: string
           user_id: string
@@ -66,6 +68,8 @@ export type Database = {
           description?: string | null
           emoji?: string | null
           id?: string
+          is_public?: boolean | null
+          share_token?: string | null
           title: string
           updated_at?: string
           user_id: string
@@ -76,6 +80,8 @@ export type Database = {
           description?: string | null
           emoji?: string | null
           id?: string
+          is_public?: boolean | null
+          share_token?: string | null
           title?: string
           updated_at?: string
           user_id?: string
@@ -87,7 +93,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_share_token: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never
