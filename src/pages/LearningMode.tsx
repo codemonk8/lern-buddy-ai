@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, RotateCw, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface Flashcard {
   id: string;
@@ -155,8 +156,11 @@ export default function LearningMode() {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Zurück
           </Button>
-          <div className="text-sm font-medium">
-            Karte {currentIndex + 1} von {cards.length}
+          <div className="flex items-center gap-4">
+            <div className="text-sm font-medium">
+              Karte {currentIndex + 1} von {cards.length}
+            </div>
+            <ThemeToggle />
           </div>
         </div>
 
