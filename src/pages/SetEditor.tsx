@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { CardEditor } from "@/components/CardEditor";
 import { AIGeneratorDialog } from "@/components/AIGeneratorDialog";
 import { ShareDialog } from "@/components/ShareDialog";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface LearningSet {
   id: string;
@@ -131,10 +132,13 @@ export default function SetEditor() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted to-background">
       <div className="container mx-auto p-4 md:p-8">
-        <Button variant="ghost" onClick={() => navigate("/")} className="mb-4">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Zurück
-        </Button>
+        <div className="flex justify-between items-center mb-4">
+          <Button variant="ghost" onClick={() => navigate("/")}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Zurück
+          </Button>
+          <ThemeToggle />
+        </div>
 
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">

@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Plus, LogOut, BookOpen, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { CreateSetDialog } from "./CreateSetDialog";
+import { ThemeToggle } from "./ThemeToggle";
 
 interface LearningSet {
   id: string;
@@ -92,10 +93,13 @@ export function Dashboard() {
             </h1>
             <p className="text-muted-foreground">Deine intelligente Lernkarten-App</p>
           </div>
-          <Button variant="ghost" onClick={handleSignOut}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Abmelden
-          </Button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button variant="ghost" onClick={handleSignOut}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Abmelden
+            </Button>
+          </div>
         </div>
 
         <Button
