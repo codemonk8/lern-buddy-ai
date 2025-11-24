@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { flashcardSchema } from "@/lib/validations";
 
 interface Flashcard {
   id: string;
@@ -39,8 +40,15 @@ export function CardEditor({ open, onOpenChange, setId, card, onCardSaved }: Car
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!front.trim() || !back.trim()) {
-      toast.error("Bitte fülle beide Seiten aus");
+    // Validate input
+    const validation = flashcardSchema.safeParse({
+      front,
+      back,
+    });
+
+    if (!validation.success) {
+      const firstError = validation.error.errors[0];
+      toast.error(firstError.message);
       return;
     }
 
@@ -52,8 +60,8 @@ export function CardEditor({ open, onOpenChange, setId, card, onCardSaved }: Car
         const { error } = await supabase
           .from("flashcards")
           .update({
-            front: front.trim(),
-            back: back.trim(),
+            front: validation.data.front,
+            back: validation.data.back,
           })
           .eq("id", card.id);
 
@@ -63,8 +71,8 @@ export function CardEditor({ open, onOpenChange, setId, card, onCardSaved }: Car
         // Create new card
         const { error } = await supabase.from("flashcards").insert({
           set_id: setId,
-          front: front.trim(),
-          back: back.trim(),
+          front: validation.data.front,
+          back: validation.data.back,
         });
 
         if (error) throw error;
