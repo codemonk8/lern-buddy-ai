@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.81.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,13 +13,64 @@ serve(async (req) => {
   }
 
   try {
-    const { topic } = await req.json();
-    
-    if (!topic) {
+    // Verify authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
       return new Response(
-        JSON.stringify({ error: 'Topic is required' }),
+        JSON.stringify({ error: 'Authentifizierung erforderlich' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Create Supabase client with user's auth
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    // Verify user is authenticated
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    if (userError || !user) {
+      console.error('Auth error:', userError);
+      return new Response(
+        JSON.stringify({ error: 'Ungültige Authentifizierung' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { topic, setId } = await req.json();
+    
+    // Validate topic input
+    if (!topic || typeof topic !== 'string') {
+      return new Response(
+        JSON.stringify({ error: 'Thema erforderlich' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    const trimmedTopic = topic.trim();
+    if (trimmedTopic.length < 2 || trimmedTopic.length > 200) {
+      return new Response(
+        JSON.stringify({ error: 'Thema muss zwischen 2 und 200 Zeichen lang sein' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Verify user owns the learning set
+    if (setId) {
+      const { data: learningSet, error: setError } = await supabaseClient
+        .from('learning_sets')
+        .select('user_id')
+        .eq('id', setId)
+        .single();
+
+      if (setError || !learningSet || learningSet.user_id !== user.id) {
+        return new Response(
+          JSON.stringify({ error: 'Keine Berechtigung für dieses Lernset' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -30,7 +82,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Generating flashcards for topic: ${topic}`);
+    console.log(`Generating flashcards for user ${user.id} with topic: ${trimmedTopic}`);
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -47,7 +99,7 @@ serve(async (req) => {
           },
           {
             role: 'user',
-            content: `Erstelle 8 Lernkarten zum Thema: "${topic}". Formatiere die Antwort als JSON-Array mit Objekten, die "front" (Frage) und "back" (Antwort) Eigenschaften haben.`
+            content: `Erstelle 8 Lernkarten zum Thema: "${trimmedTopic}". Formatiere die Antwort als JSON-Array mit Objekten, die "front" (Frage) und "back" (Antwort) Eigenschaften haben.`
           }
         ],
         tools: [

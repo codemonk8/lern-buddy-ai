@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Loader2, Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { topicSchema } from "@/lib/validations";
 
 interface GeneratedCard {
   front: string;
@@ -28,8 +29,12 @@ export function AIGeneratorDialog({ open, onOpenChange, setId, onCardsGenerated 
   const [isSaving, setIsSaving] = useState(false);
 
   const handleGenerate = async () => {
-    if (!topic.trim()) {
-      toast.error("Bitte gib ein Thema ein");
+    // Validate topic
+    const validation = topicSchema.safeParse(topic);
+    
+    if (!validation.success) {
+      const firstError = validation.error.errors[0];
+      toast.error(firstError.message);
       return;
     }
 
@@ -38,7 +43,7 @@ export function AIGeneratorDialog({ open, onOpenChange, setId, onCardsGenerated 
 
     try {
       const { data, error } = await supabase.functions.invoke("generate-flashcards", {
-        body: { topic: topic.trim() },
+        body: { topic: validation.data, setId },
       });
 
       if (error) {

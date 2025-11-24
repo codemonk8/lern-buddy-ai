@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { learningSetSchema } from "@/lib/validations";
 
 const EMOJIS = ["📚", "🎯", "🧠", "💡", "📝", "🎓", "🔬", "🌟", "💪", "🚀"];
 const COLORS = ["#9b87f5", "#F97316", "#10B981", "#3B82F6", "#8B5CF6", "#EC4899", "#F59E0B", "#06B6D4"];
@@ -29,13 +30,22 @@ export function CreateSetDialog({ open, onOpenChange, onSetCreated }: CreateSetD
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!title.trim()) {
-      toast.error("Bitte gib einen Titel ein");
+    if (!user) {
+      toast.error("Du musst angemeldet sein");
       return;
     }
 
-    if (!user) {
-      toast.error("Du musst angemeldet sein");
+    // Validate input
+    const validation = learningSetSchema.safeParse({
+      title,
+      description: description || undefined,
+      emoji,
+      color,
+    });
+
+    if (!validation.success) {
+      const firstError = validation.error.errors[0];
+      toast.error(firstError.message);
       return;
     }
 
@@ -44,10 +54,10 @@ export function CreateSetDialog({ open, onOpenChange, onSetCreated }: CreateSetD
     try {
       const { error } = await supabase.from("learning_sets").insert({
         user_id: user.id,
-        title: title.trim(),
-        description: description.trim() || null,
-        emoji,
-        color,
+        title: validation.data.title,
+        description: validation.data.description || null,
+        emoji: validation.data.emoji,
+        color: validation.data.color,
       });
 
       if (error) throw error;

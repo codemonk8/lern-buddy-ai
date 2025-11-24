@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { authSchema } from "@/lib/validations";
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -20,13 +21,12 @@ export default function Auth() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !password) {
-      toast.error("Bitte fülle alle Felder aus");
-      return;
-    }
-
-    if (password.length < 6) {
-      toast.error("Das Passwort muss mindestens 6 Zeichen lang sein");
+    // Validate input
+    const validation = authSchema.safeParse({ email, password });
+    
+    if (!validation.success) {
+      const firstError = validation.error.errors[0];
+      toast.error(firstError.message);
       return;
     }
 
@@ -34,7 +34,7 @@ export default function Auth() {
 
     try {
       if (isLogin) {
-        const { error } = await signIn(email, password);
+        const { error } = await signIn(validation.data.email, validation.data.password);
         if (error) {
           if (error.message.includes("Invalid login credentials")) {
             toast.error("Ungültige E-Mail oder Passwort");
@@ -46,7 +46,7 @@ export default function Auth() {
           navigate("/");
         }
       } else {
-        const { error } = await signUp(email, password);
+        const { error } = await signUp(validation.data.email, validation.data.password);
         if (error) {
           if (error.message.includes("already registered")) {
             toast.error("Diese E-Mail ist bereits registriert");
